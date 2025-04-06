@@ -1,0 +1,45 @@
+{
+  "name": "taiasst-plugin",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build:frontend": "vite build",
+    "build:backend": "node scripts/package.js --backend-only",
+    "build": "pnpm run build:frontend && node scripts/package.js",
+    "dev:frontend": "vite",
+    "dev": "pnpm run build:backend && pnpm run dev:frontend",
+    "package": "node scripts/package.js --package-only",
+    "build:package": "pnpm run build:frontend && node scripts/package.js"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.0.0",
+    "@remixicon/react": "^4.6.0",
+    "antd": "^5.24.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "^7.4.1",
+    "@tauri-apps/api": "^2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@tailwindcss/vite": "^4.0.17",
+    "@types/node": "^22.13.14",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react-swc": "^3.8.0",
+    "archiver": "^6.0.1",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "tailwindcss": "^4.0.17",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.0.3",
+    "vite-plugin-svgr": "^4.3.0"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

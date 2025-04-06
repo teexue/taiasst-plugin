@@ -1,0 +1,14 @@
+{
+  "id": "taiasst-plugin-example",
+  "name": "示例插件",
+  "description": "这是一个示例插件，展示插件系统的基本功能",
+  "version": "1.0.0",
+  "author": "taiasst开发组",
+  "path": "plugin",
+  "backendEntry": "plugin.dll",
+  "hasBackend": true,
+  "enabled": true,
+  "icon": "",
+  "category": "",
+  "tags": []
+}
