@@ -7,13 +7,30 @@ const { execSync } = require("child_process");
 const args = process.argv.slice(2);
 const backendOnly = args.includes("--backend-only");
 const packageOnly = args.includes("--package-only");
+const forceBackend = args.includes("--force-backend");
+
+// 获取项目根目录路径
+const rootDir = path.resolve(__dirname, "..");
+
+// 读取metadata.json获取插件信息
+function readMetadata() {
+  const metadataPath = path.join(rootDir, "metadata.json");
+  if (!fs.existsSync(metadataPath)) {
+    console.error("错误: metadata.json不存在");
+    process.exit(1);
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
+  } catch (error) {
+    console.error("读取metadata.json失败:", error);
+    process.exit(1);
+  }
+}
 
 // 构建插件后端
 async function buildBackend() {
   console.log("开始构建插件后端...");
-
-  // 获取项目根目录路径
-  const rootDir = path.resolve(__dirname, "..");
 
   // 确定输出扩展名
   const ext =
@@ -104,69 +121,32 @@ async function createPluginPackage() {
   console.log("开始打包插件...");
 
   // 检查dist目录
-  const distDir = path.resolve(__dirname, "../dist");
+  const distDir = path.join(rootDir, "dist");
   if (!fs.existsSync(distDir)) {
     console.error("错误: dist目录不存在，请先构建插件");
     process.exit(1);
   }
 
   // 创建输出目录
-  const outputDir = path.resolve(__dirname, "../packages");
+  const outputDir = path.join(rootDir, "packages");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
   // 读取package.json获取基本信息
   const packageJson = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, "../package.json"), "utf-8")
+    fs.readFileSync(path.join(rootDir, "package.json"), "utf-8")
   );
   const { name } = packageJson;
 
-  // 读取plugin.json获取插件信息
-  const pluginJsonPath = path.resolve(__dirname, "../plugin.json");
-  if (!fs.existsSync(pluginJsonPath)) {
-    console.error("错误: plugin.json不存在");
-    process.exit(1);
-  }
-
   // 读取插件信息
-  let pluginInfo;
-  try {
-    pluginInfo = JSON.parse(fs.readFileSync(pluginJsonPath, "utf-8"));
-    console.log("成功读取插件信息:", pluginInfo.name);
-  } catch (error) {
-    console.error("读取plugin.json失败:", error);
-    process.exit(1);
-  }
-
-  // 创建临时目录来存放metadata.json
-  const tempDir = path.resolve(__dirname, "../.temp");
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir, { recursive: true });
-  }
-
-  // 使用plugin.json创建metadata.json
-  const metadata = {
-    id: pluginInfo.id || name,
-    name: pluginInfo.name,
-    version: pluginInfo.version,
-    path: pluginInfo.path || "plugin",
-    description: pluginInfo.description || "",
-    author: pluginInfo.author || "",
-    backend_entry:
-      pluginInfo.backend_entry ||
-      (pluginInfo.hasBackend ? pluginInfo.backendEntry : ""),
-  };
-
-  // 写入metadata.json
-  const metadataPath = path.resolve(tempDir, "metadata.json");
-  fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
-  console.log("生成metadata.json成功");
+  const pluginInfo = readMetadata();
+  console.log("成功读取插件信息:", pluginInfo.name);
 
   // 创建zip文件
-  const outputPath = path.resolve(
+  const outputPath = path.join(
     outputDir,
-    `${pluginInfo.id || name}-${pluginInfo.version}.zip`
+    `${pluginInfo.id || name}-v${pluginInfo.version}.zip`
   );
   const output = fs.createWriteStream(outputPath);
   const archive = archiver("zip", {
@@ -182,10 +162,10 @@ async function createPluginPackage() {
   archive.pipe(output);
 
   // 添加文件
-  archive.file(path.resolve(distDir, "plugin.js"), {
+  archive.file(path.join(distDir, "plugin.js"), {
     name: `${pluginInfo.id || name}/plugin.js`,
   });
-  archive.file(metadataPath, {
+  archive.file(path.join(rootDir, "metadata.json"), {
     name: `${pluginInfo.id || name}/metadata.json`,
   });
 
@@ -201,7 +181,7 @@ async function createPluginPackage() {
     );
 
   backendFiles.forEach((file) => {
-    archive.file(path.resolve(distDir, file), {
+    archive.file(path.join(distDir, file), {
       name: `${pluginInfo.id || name}/${file}`,
     });
   });
@@ -209,26 +189,35 @@ async function createPluginPackage() {
   // 完成打包
   await archive.finalize();
 
-  // 清理临时目录
-  fs.rmSync(tempDir, { recursive: true, force: true });
-
   console.log(`插件打包完成: ${outputPath}`);
 }
 
 // 主函数：根据命令行参数决定执行什么操作
 async function main() {
   try {
+    // 读取metadata.json
+    const metadata = readMetadata();
+    const needsBackend = metadata.has_backend || forceBackend;
+
     if (backendOnly) {
       // 只构建后端
-      await buildBackend();
-      console.log("后端构建完成！");
+      if (needsBackend) {
+        await buildBackend();
+        console.log("后端构建完成！");
+      } else {
+        console.log("插件不包含后端，跳过后端构建");
+      }
     } else if (packageOnly) {
       // 只打包
       await createPluginPackage();
       console.log("打包完成！");
     } else {
-      // 两者都执行
-      await buildBackend();
+      // 执行完整构建流程
+      if (needsBackend) {
+        await buildBackend();
+      } else {
+        console.log("插件不包含后端，跳过后端构建");
+      }
       await createPluginPackage();
       console.log("构建和打包过程已完成！");
     }

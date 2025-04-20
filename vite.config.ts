@@ -36,6 +36,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
             antd: "antd",
             "@remixicon/react": "RemixIcon",
             "react-router": "ReactRouter",
+            "@ant-design/icons": "Icons",
           },
         },
       },

@@ -1,0 +1,10 @@
+{
+  "id": "taiasst-plugin-demo",
+  "name": "taiasst演示插件",
+  "version": "1.0.0",
+  "plugin_type": "tool",
+  "description": "taiasst演示插件",
+  "author": "taiasst开发组",
+  "has_backend": true,
+  "backend_lib": "plugin.dll"
+}
